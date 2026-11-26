@@ -1,6 +1,6 @@
 # videoharness
 
-*A Madahood Studio development project under Ipsa Solutions LLC.*
+*A [Ma Da Hood Studios](https://madahood.com/) development project under Ipsa Solutions LLC.*
 
 **Type a brief. Get a video.** videoharness turns one line into a finished
 video on machines you own. A writer model on Ollama plans the shots, ComfyUI
@@ -12,6 +12,9 @@ and pictures never leave your network.
 *"The Pie Heist": 20 seconds with sound, from one line. This is its first
 frame, and it links to the video. Machine-generated: the first frames by
 Z-Image Turbo, the motion and sound by MiniMax H3.*
+
+**The web page, with the install steps and example runs at length:
+[madahood.com/videoharness](https://madahood.com/videoharness/).**
 
 ## How it works
 
@@ -49,10 +52,17 @@ Z-Image Turbo's page gave Apache 2.0.
 
 ## Install
 
-Download two files from this repository into one folder:
-[`videoharness-0.1.0-install.sh`](videoharness-0.1.0-install.sh) and
-[its checksum](videoharness-0.1.0-install.sh.sha256). In that folder, check
-that the file you fetched is the one that was made:
+Download the installer and its checksum into one folder:
+
+```bash
+wget https://github.com/kbiz76/mdh-videoharness/raw/main/videoharness-0.1.0-install.sh
+wget https://github.com/kbiz76/mdh-videoharness/raw/main/videoharness-0.1.0-install.sh.sha256
+```
+
+Or open [`videoharness-0.1.0-install.sh`](videoharness-0.1.0-install.sh) and
+[its checksum](videoharness-0.1.0-install.sh.sha256) here, and use the
+download button on each one's page. In that folder, check that the file you
+fetched is the one that was made:
 
 ```bash
 sha256sum -c videoharness-0.1.0-install.sh.sha256
@@ -119,9 +129,9 @@ The same command, steered:
 | A title on a video already made, in seconds | `vh make fox-pie --title-card` |
 | Another take of shot 2's clip | `vh clips fox-pie --reroll 2` |
 
-All of it is in **[MANUAL.md](MANUAL.md)**. The web page that comes with this
-repository, `index.html`, has these runs at length, with what every command
-printed.
+All of it is in **[MANUAL.md](MANUAL.md)**. The
+[web page](https://madahood.com/videoharness/) has these runs at length, with
+what every command printed.
 
 ## Or do it in your browser
 
@@ -140,9 +150,9 @@ else, and no cloud model is used.
 
 ## Licence
 
-videoharness is a Madahood Studio development project under Ipsa Solutions
-LLC. It is Copyright (c) 2026 Ipsa Solutions LLC and is made available under
-the Elastic License 2.0. In short, and the licence itself is what
+videoharness is a Ma Da Hood Studios development project under Ipsa
+Solutions LLC. It is Copyright (c) 2026 Ipsa Solutions LLC and is made
+available under the Elastic License 2.0. In short, and the licence itself is what
 counts: you may use it, copy it and change it; you may not offer it to others
 as a hosted or managed service, and you may not remove or alter its licence
 and copyright notices. The full terms are in [LICENSE](LICENSE), and

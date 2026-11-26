@@ -7,7 +7,7 @@
 <meta name="description" content="videoharness turns a one-line brief into a finished video on machines you own, with Ollama, ComfyUI and ffmpeg. How to install it, what hardware it needs, and example runs.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f1c17'/%3E%3Cpath d='M12 9.5v13l11-6.5z' fill='%23f08a4b'/%3E%3C/svg%3E">
 <style>
-/* This page loads nothing from anywhere else: no fonts, no scripts, no trackers. The pictures and the video are
+/* As written, this page loads nothing from anywhere else: no fonts, no scripts, no trackers. The pictures and the video are
    beside it. */
 :root {
   --paper: #f7f2e8; --paper-2: #efe8d9; --card: #fffdf8;
@@ -189,13 +189,14 @@ footer p { max-width: 50rem; }
       <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1f1c17"/><path d="M12 9.5v13l11-6.5z" fill="#f08a4b"/></svg>
       videoharness
     </a>
-    <nav aria-label="On this page">
+    <nav aria-label="This page, and the studio">
       <a href="#how">How it works</a>
       <a href="#hardware">Hardware</a>
       <a href="#install">Install</a>
       <a href="#examples">Example runs</a>
       <a href="#page">Its page</a>
       <a href="#licence">Licence</a>
+      <a href="https://madahood.com/">Ma Da Hood Studios</a>
     </nav>
   </div>
 </div>
@@ -450,12 +451,12 @@ ffmpeg: NO
 narration: NO (narration needs Kokoro, and no Python named here has it: name one that does as "kokoro" in config/farm.json)</span></pre>
           </figure>
           <p>That is a computer with one card, its ComfyUI ready (on port 8189; yours is likely on 8188), its writer pulled, and one thing still to do: the line under <code>Missing</code> says what. When a model is missing it names the file, the folder it goes in and its address. When it ends with <code>Nothing is missing: a video can be made.</code>, open <a href="http://127.0.0.1:8710">http://127.0.0.1:8710</a> in a browser on the same computer, or make a video from the terminal, as below.</p>
-          <p><code>narration: NO</code> matters only if you want a narrator. The narrator&rsquo;s voice is Kokoro, a text-to-speech model that you install yourself: &ldquo;A narrator&rdquo; in <a href="INSTALL.md">INSTALL.md</a> says how. After a change to <code>farm.json</code>, restart the page so that it reads all of it again: <code>systemctl --user restart videoharness</code>.</p>
+          <p><code>narration: NO</code> matters only if you want a narrator. The narrator&rsquo;s voice is Kokoro, a text-to-speech model that you install yourself: &ldquo;A narrator&rdquo; in <a href="https://github.com/kbiz76/mdh-videoharness/blob/main/INSTALL.md">INSTALL.md</a> says how. After a change to <code>farm.json</code>, restart the page so that it reads all of it again: <code>systemctl --user restart videoharness</code>.</p>
         </div>
       </li>
     </ol>
 
-    <p style="margin-top:1.6rem">The whole of it, with what to check when the page will not open, is in the install guide, <a href="INSTALL.md">INSTALL.md</a>.</p>
+    <p style="margin-top:1.6rem">The whole of it, with what to check when the page will not open, is in the install guide, <a href="https://github.com/kbiz76/mdh-videoharness/blob/main/INSTALL.md">INSTALL.md</a>.</p>
   </div>
 </section>
 
@@ -582,12 +583,12 @@ all on one page: videos/fox-pie/stills/sheet.jpg
         <span class="tag">More</span>
         <h3>The same command, steered</h3>
       </header>
-      <p>Most of these are a brief with one more thing said. The ones that name <code>fox-pie</code> work on a video already made. Each has its section in the manual, <a href="MANUAL.md">MANUAL.md</a>.</p>
+      <p>Most of these are a brief with one more thing said. The ones that name <code>fox-pie</code> work on a video already made. Each has its section in the manual, <a href="https://github.com/kbiz76/mdh-videoharness/blob/main/MANUAL.md">MANUAL.md</a>.</p>
       <div class="recipes">
         <div class="recipe"><p>An upright video</p><code>vh make "..." --aspect 9:16</code></div>
         <div class="recipe"><p>Your own pictures<span class="more">One shot from each, in that order, 10 seconds each unless <code>--seconds</code> says.</span></p><code>vh make "..." --picture a.jpg b.jpg</code></div>
         <div class="recipe"><p>One continuous scene<span class="more">Each shot starts on the frame the last ended on. Add one <code>--picture</code>, and whoever is in it stays the same all the way through.</span></p><code>vh make "..." --carry-on</code></div>
-        <div class="recipe"><p>A narrator<span class="more">The voice is Kokoro, which you install yourself: &ldquo;A narrator&rdquo; in <a href="INSTALL.md">INSTALL.md</a>.</span></p><code>vh make "..." --narrate</code></div>
+        <div class="recipe"><p>A narrator<span class="more">The voice is Kokoro, which you install yourself: &ldquo;A narrator&rdquo; in <a href="https://github.com/kbiz76/mdh-videoharness/blob/main/INSTALL.md">INSTALL.md</a>.</span></p><code>vh make "..." --narrate</code></div>
         <div class="recipe"><p>A narrator in a voice you choose<span class="more"><code>vh voices</code> lists the ones you have.</span></p><code>vh make "..." --narrate --voice bm_george</code></div>
         <div class="recipe"><p>A narrator who says your own text<span class="more">Word for word: each paragraph becomes a shot.</span></p><code>vh make "..." --text story.txt</code></div>
         <div class="recipe"><p>Subtitles<span class="more">The narrator&rsquo;s words at the foot of the picture, as they are said.</span></p><code>vh make "..." --narrate --subtitles</code></div>
@@ -628,7 +629,7 @@ all on one page: videos/fox-pie/stills/sheet.jpg
     <div class="tiles three">
       <div class="tile"><div class="k">Servers</div><div class="v">Home addresses only</div><p>Only this computer and addresses on a private network (192.168.x.x, 10.x.x.x and the like) are accepted as servers. Anything else is refused.</p></div>
       <div class="tile"><div class="k">Your material</div><div class="v">Never sent out</div><p>Briefs, prompts, plans and pictures go to your own Ollama and ComfyUI and nowhere else. No cloud model is used.</p></div>
-      <div class="tile"><div class="k">The page</div><div class="v">One file</div><p>The page in your browser is one file and loads nothing from the internet. Neither does this one.</p></div>
+      <div class="tile"><div class="k">The page</div><div class="v">One file</div><p>The page in your browser is one file and loads nothing from the internet.</p></div>
     </div>
   </div>
 </section>
@@ -638,11 +639,11 @@ all on one page: videos/fox-pie/stills/sheet.jpg
     <p class="eyebrow">Guides and licence</p>
     <h2>Read before you install</h2>
     <div class="tiles two">
-      <div class="tile"><div class="k">Guide</div><div class="v"><a href="INSTALL.md">INSTALL.md</a></div><p>Installing it, the models, setting it up, the page as a service, and what to check when the page will not open.</p></div>
-      <div class="tile"><div class="k">Guide</div><div class="v"><a href="MANUAL.md">MANUAL.md</a></div><p>The plan, your own pictures, narration and voices, words on the picture, sound, several servers, and every command.</p></div>
+      <div class="tile"><div class="k">Guide</div><div class="v"><a href="https://github.com/kbiz76/mdh-videoharness/blob/main/INSTALL.md">INSTALL.md</a></div><p>Installing it, the models, setting it up, the page as a service, and what to check when the page will not open.</p></div>
+      <div class="tile"><div class="k">Guide</div><div class="v"><a href="https://github.com/kbiz76/mdh-videoharness/blob/main/MANUAL.md">MANUAL.md</a></div><p>The plan, your own pictures, narration and voices, words on the picture, sound, several servers, and every command.</p></div>
     </div>
     <p>Both guides also come inside the installer, which puts them in <code>~/.local/share/videoharness/</code>.</p>
-    <p>videoharness is a Madahood Studio development project under Ipsa Solutions LLC. It is Copyright (c) 2026 Ipsa Solutions LLC and is made available under the <a href="https://www.elastic.co/licensing/elastic-license" rel="noopener">Elastic License 2.0</a>. In short, and the licence itself is what counts: you may use it, copy it and change it; you may not offer it to others as a hosted or managed service, and you may not remove or alter its licence and copyright notices. The full terms are in <a href="LICENSE">LICENSE</a>, and <code>bash videoharness-0.1.0-install.sh --license</code> shows them before anything is installed.</p>
+    <p>videoharness is a <a href="https://madahood.com/">Ma Da Hood Studios</a> development project under Ipsa Solutions LLC. It is Copyright (c) 2026 Ipsa Solutions LLC and is made available under the <a href="https://www.elastic.co/licensing/elastic-license" rel="noopener">Elastic License 2.0</a>. In short, and the licence itself is what counts: you may use it, copy it and change it; you may not offer it to others as a hosted or managed service, and you may not remove or alter its licence and copyright notices. The full terms are in <a href="LICENSE">LICENSE</a>, and <code>bash videoharness-0.1.0-install.sh --license</code> shows them before anything is installed.</p>
     <p><strong>The models are their makers&rsquo;, each under a licence of its own.</strong> MiniMax H3 makes every clip, and its licence is the one to read first. When this was written it said it applies worldwide except the European Union, the United Kingdom, the Republic of Korea and the United States of America, where it asks you to contact MiniMax for a licence, and that what the model makes may not be published without saying clearly that it is machine-generated. The video on this page was made with it and is marked that way. Where to read each licence is in <a href="#model-licences">step 2</a>.</p>
   </div>
 </section>
@@ -651,7 +652,7 @@ all on one page: videos/fox-pie/stills/sheet.jpg
 
 <footer>
   <div class="wrap">
-    <p>videoharness is a Madahood Studio development project under Ipsa Solutions LLC. Copyright (c) 2026 Ipsa Solutions LLC. Made available under the Elastic License 2.0.</p>
+    <p>videoharness is a <a href="https://madahood.com/">Ma Da Hood Studios</a> development project under Ipsa Solutions LLC. Copyright (c) 2026 Ipsa Solutions LLC. Made available under the Elastic License 2.0.</p>
     <p>ComfyUI, Ollama, Z-Image Turbo, MiniMax H3 and ffmpeg are their makers&rsquo; own, each under its own licence; videoharness installs none of them. The pictures and the video on this page are machine-generated.</p>
   </div>
 </footer>
