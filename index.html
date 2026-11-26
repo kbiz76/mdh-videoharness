@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>videoharness: type a brief, get a video</title>
+<meta name="description" content="videoharness turns a one-line brief into a finished video on machines you own, with Ollama, ComfyUI and ffmpeg. How to install it, what hardware it needs, and example runs.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f1c17'/%3E%3Cpath d='M12 9.5v13l11-6.5z' fill='%23f08a4b'/%3E%3C/svg%3E">
+<style>
+/* This page loads nothing from anywhere else: no fonts, no scripts, no trackers. The pictures and the video are
+   beside it. */
+:root {
+  --paper: #f7f2e8; --paper-2: #efe8d9; --card: #fffdf8;
+  --ink: #1f1c17; --ink-2: #49443a; --muted: #6c6557; --line: #dbd1bd;
+  --fox: #b83d0b; --fox-soft: #f6dcc9; --sage: #46654a; --sage-soft: #dfe8da;
+  --term: #1b1915; --term-ink: #ede6d7; --term-dim: #a9a08e; --term-line: #35312a; --term-accent: #f3a765;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --wide: 1080px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171512; --paper-2: #1f1c18; --card: #211e19;
+    --ink: #f0e9db; --ink-2: #d2cab9; --muted: #a0988a; --line: #3a352c;
+    --fox: #f08a4b; --fox-soft: #3c2617; --sage: #a3c19f; --sage-soft: #26301f;
+    --term: #0f0e0c; --term-line: #2c2822;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--sans); overflow-wrap: break-word; }
+img, video { max-width: 100%; height: auto; display: block; }
+a { color: var(--fox); text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--fox); outline-offset: 2px; border-radius: 3px; }
+code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
+p code, li code, td code, dd code, figcaption code { background: var(--paper-2); border: 1px solid var(--line); border-radius: 4px; padding: 0.05em 0.35em; white-space: nowrap; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.12; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+h2 { font-size: clamp(1.9rem, 4.4vw, 2.7rem); }
+h3 { font-size: 1.3rem; line-height: 1.25; }
+p { margin: 0 0 1em; }
+.wrap { width: min(var(--wide), 100% - 32px); margin-inline: auto; }
+.eyebrow { font: 600 0.78rem/1.2 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fox); margin: 0 0 0.9rem; }
+.lead { font-size: 1.16rem; color: var(--ink-2); max-width: 46rem; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--ink); color: var(--paper); padding: 0.6rem 1rem; z-index: 20; }
+.skip:focus { left: 0; }
+
+/* the bar at the top */
+.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 1.2rem; min-height: 3.4rem; }
+.brand { font: 600 1.15rem/1 var(--serif); color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; flex: none; }
+.brand svg { width: 1.35rem; height: 1.35rem; }
+.top nav { display: flex; gap: 1.15rem; margin-left: auto; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+.top nav::-webkit-scrollbar { display: none; }
+.top nav a { color: var(--ink-2); text-decoration: none; font-size: 0.93rem; padding: 0.9rem 0; }
+.top nav a:hover { color: var(--fox); }
+
+/* the opening */
+.hero { padding: clamp(2.2rem, 6vw, 4.6rem) 0 clamp(2rem, 5vw, 3.6rem); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); gap: clamp(1.6rem, 4vw, 3.4rem); align-items: center; }
+.hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.5rem); letter-spacing: -0.025em; }
+.hero h1 em { font-style: italic; color: var(--fox); }
+.hero .lead { margin-top: 1.2rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 1.5rem 0 0.4rem; }
+.btn { display: inline-flex; align-items: center; gap: 0.5rem; font: 600 1rem/1 var(--sans); padding: 0.85rem 1.25rem; border-radius: 8px; text-decoration: none; border: 1.5px solid var(--ink); color: var(--ink); background: transparent; }
+.btn:hover { background: var(--paper-2); }
+.btn.go { background: var(--ink); color: var(--paper); }
+.btn.go:hover { background: var(--fox); border-color: var(--fox); color: #fff; }
+.facts { color: var(--muted); font-size: 0.9rem; margin: 1rem 0 0; }
+.screen { margin: 0; }
+.screen .frame { background: #14120f; border-radius: 12px; padding: 10px; box-shadow: 0 24px 50px -24px rgba(31, 28, 23, 0.55), 0 2px 0 rgba(255, 255, 255, 0.06) inset; }
+.screen video, .screen img { width: 100%; aspect-ratio: 7 / 4; object-fit: cover; border-radius: 5px; background: #000; }
+figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.7rem; }
+
+section { padding: clamp(2.6rem, 6vw, 4.6rem) 0; border-top: 1px solid var(--line); }
+section > .wrap > .lead { margin-top: 1rem; }
+
+/* the five stages, as a strip of film */
+.strip { margin: 2rem 0 1.2rem; background: #1b1915; border-radius: 10px; padding: 26px 14px; position: relative; color: #ede6d7; }
+.strip::before, .strip::after { content: ""; position: absolute; left: 14px; right: 14px; height: 10px; background: repeating-linear-gradient(90deg, #47423a 0 14px, transparent 14px 28px); border-radius: 2px; }
+.strip::before { top: 8px; } .strip::after { bottom: 8px; }
+.strip ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip li { background: #26231d; border: 1px solid #3a352c; border-radius: 6px; padding: 0.95rem 0.9rem 1rem; min-width: 0; }
+.strip .n { font: 600 0.72rem/1 var(--mono); color: #a9a08e; letter-spacing: 0.08em; }
+.strip b { display: block; font: 600 1.28rem/1.15 var(--serif); margin: 0.45rem 0 0.3rem; color: #fff; }
+.strip span { display: block; font-size: 0.86rem; color: #cfc6b4; line-height: 1.35; }
+.strip .cost { margin-top: 0.6rem; color: #f3a765; font: 600 0.8rem/1.2 var(--mono); }
+
+/* tiles */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 1.8rem 0 1.4rem; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1.05rem 1.1rem 1.15rem; }
+.tile .k { font: 600 0.74rem/1.2 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font: 600 1.5rem/1.15 var(--serif); margin: 0.45rem 0 0.35rem; }
+.tile p { font-size: 0.9rem; color: var(--ink-2); margin: 0; line-height: 1.45; }
+.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.note { background: var(--sage-soft); border-left: 4px solid var(--sage); border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1.4rem 0; font-size: 0.97rem; }
+.note.warn { background: var(--fox-soft); border-color: var(--fox); }
+.note p:last-child { margin-bottom: 0; }
+
+/* tables */
+.scroll { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 0.94rem; }
+th, td { text-align: left; padding: 0.62rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.76rem/1.3 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--paper-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.num .t { white-space: nowrap; }
+
+/* a terminal */
+.term { margin: 1.2rem 0; background: var(--term); color: var(--term-ink); border-radius: 10px; border: 1px solid var(--term-line); overflow: hidden; }
+.term-bar { display: flex; align-items: center; gap: 0.7rem; padding: 0.5rem 0.6rem 0.5rem 0.9rem; border-bottom: 1px solid var(--term-line); color: var(--term-dim); font: 500 0.8rem/1.2 var(--sans); }
+.term-bar .dots { width: 34px; height: 8px; flex: none; background: radial-gradient(circle 4px, #6b6457 98%, transparent) 0 0 / 13px 8px repeat-x; }
+.term-bar .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.copy { flex: none; font: 600 0.76rem/1 var(--sans); color: var(--term-ink); background: #2c2822; border: 1px solid #47423a; border-radius: 6px; padding: 0.42rem 0.7rem; cursor: pointer; }
+.copy:hover { background: #3a352c; }
+.copy.done { color: #1b1915; background: var(--term-accent); border-color: var(--term-accent); }
+.term pre { margin: 0; padding: 0.95rem 1rem 1.05rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; line-height: 1.55; }
+.term .c { color: #fff; font-weight: 600; }
+.term .p { color: var(--term-accent); user-select: none; }
+.term .o { color: var(--term-dim); }
+.term .hl { color: var(--term-accent); }
+.term .st { color: var(--term-ink); font-weight: 600; }
+.term del { color: #e39a86; }
+.term ins { color: #a9d58f; text-decoration: none; font-weight: 600; }
+
+/* numbered steps */
+.steps { list-style: none; margin: 2.2rem 0 0; padding: 0; counter-reset: step; }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 0 1rem; padding: 1.7rem 0; border-top: 1px solid var(--line); }
+.steps > li::before { content: counter(step); font: 600 3rem/0.95 var(--serif); color: var(--fox); }
+.steps h3 { margin-bottom: 0.55rem; }
+.steps p, .steps ul { color: var(--ink-2); }
+.steps ul { margin: 0 0 1em; padding-left: 1.2rem; }
+.steps li li { margin: 0.25rem 0; }
+.get { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 0.9rem 0 1.1rem; }
+details { border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin: 1rem 0; }
+summary { cursor: pointer; padding: 0.8rem 1rem; font-weight: 600; }
+details > div { padding: 0 1rem 1rem; }
+details .scroll { background: var(--paper); }
+
+/* the runs */
+.run { margin: 2.4rem 0 0; padding-top: 2.2rem; border-top: 1px solid var(--line); }
+.run header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1rem; margin-bottom: 0.7rem; }
+.run .tag { font: 600 0.76rem/1 var(--mono); color: var(--fox); letter-spacing: 0.06em; text-transform: uppercase; }
+.run h3 { font-size: 1.55rem; flex: 1 1 16rem; }
+.run .took { font: 600 0.82rem/1 var(--mono); color: var(--sage); background: var(--sage-soft); border-radius: 99px; padding: 0.42rem 0.75rem; white-space: nowrap; }
+.shot { margin: 1.3rem 0 0; }
+.shot img, .shot video { border-radius: 10px; border: 1px solid var(--line); width: 100%; }
+.recipes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 1.4rem; }
+.recipe { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0.95rem 1rem; }
+.recipe p { margin: 0 0 0.5rem; font-weight: 600; }
+.recipe p .more { display: block; font-weight: 400; color: var(--muted); font-size: 0.93rem; margin-top: 0.15rem; }
+.recipe > code { display: block; background: var(--term); color: var(--term-ink); border: 0; border-radius: 6px; padding: 0.6rem 0.7rem; font-size: 0.82rem; overflow-wrap: anywhere; }
+
+footer { border-top: 1px solid var(--line); padding: 2.2rem 0 3rem; color: var(--muted); font-size: 0.9rem; }
+footer p { max-width: 50rem; }
+
+@media (max-width: 860px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+  .strip ol { grid-template-columns: minmax(0, 1fr); }
+  .strip li { display: grid; grid-template-columns: 2rem minmax(0, 1fr); column-gap: 0.4rem; }
+  .strip li > * { grid-column: 2; } .strip li > .n { grid-column: 1; grid-row: 1 / span 3; padding-top: 0.45rem; }
+  .strip b { margin-top: 0; }
+  .tiles, .three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .recipes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  p code, li code, dd code, figcaption code { white-space: normal; overflow-wrap: anywhere; }
+  th, td { padding: 0.55rem 0.6rem; }
+  th, th.num, td.num { white-space: normal; }
+  .tiles, .three, .two { grid-template-columns: minmax(0, 1fr); }
+  .steps > li { grid-template-columns: minmax(0, 1fr); }
+  .steps > li::before { font-size: 2.3rem; margin-bottom: 0.5rem; }
+  .top nav { gap: 0.95rem; }
+  .btn { flex: 1 1 auto; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<div class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="videoharness, top of the page">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1f1c17"/><path d="M12 9.5v13l11-6.5z" fill="#f08a4b"/></svg>
+      videoharness
+    </a>
+    <nav aria-label="On this page">
+      <a href="#how">How it works</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#install">Install</a>
+      <a href="#examples">Example runs</a>
+      <a href="#page">Its page</a>
+      <a href="#licence">Licence</a>
+    </nav>
+  </div>
+</div>
+
+<main id="main">
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">videoharness 0.1.0</p>
+      <h1>Type a brief.<br>Get a <em>video</em>.</h1>
+      <p class="lead">videoharness turns one line into a finished video on machines you own. A writer model on Ollama plans the shots, ComfyUI draws and animates them, and ffmpeg cuts them together. Your briefs, prompts and pictures never leave your network.</p>
+      <div class="actions">
+        <a class="btn go" href="#install">Install it</a>
+        <a class="btn" href="#examples">See a run</a>
+      </div>
+      <p class="facts">For Linux. Needs ComfyUI and Ollama, on this computer or another at home. <a href="#hardware">What hardware it takes</a>. The clip model&rsquo;s licence leaves out some countries: <a href="#model-licences">read that first</a>.</p>
+    </div>
+    <figure class="screen">
+      <div class="frame">
+        <video controls preload="metadata" playsinline poster="fox-still.jpg" data-still="fox-still.jpg" data-alt="A watercolour fox beside a pie cooling on a farmhouse windowsill">
+          <source src="fox-pie.mp4" type="video/mp4">
+        </video>
+      </div>
+      <figcaption>&ldquo;The Pie Heist&rdquo;, 20 seconds with sound, from the one-line brief in <a href="#examples">the example runs</a>. Machine-generated: the first frames by Z-Image Turbo, the motion and sound by MiniMax H3.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>Five stages, each dearer than the last</h2>
+    <p class="lead">A plan takes seconds and a clip takes minutes. So you look at the cheap stages first, a bad idea is caught before any clip is made, and a change remakes only what it touches.</p>
+    <div class="strip">
+      <ol>
+        <li><div class="n">01</div><b>Brief</b><span>One line from you: what happens, and the look.</span><div class="cost">you</div></li>
+        <li><div class="n">02</div><b>Plan</b><span>A writer model on Ollama turns it into shots: the look, the cast, each shot&rsquo;s first frame, motion and sound.</span><div class="cost">about 30 s</div></li>
+        <li><div class="n">03</div><b>Stills</b><span>ComfyUI draws each shot&rsquo;s first frame with Z-Image Turbo.</span><div class="cost">about 15 s each</div></li>
+        <li><div class="n">04</div><b>Clips</b><span>ComfyUI animates each still with MiniMax H3, with its sound.</span><div class="cost">minutes each</div></li>
+        <li><div class="n">05</div><b>Cut</b><span>ffmpeg joins the clips, levels the sound and lays any narration over.</span><div class="cost">seconds</div></li>
+      </ol>
+    </div>
+    <p>The plan is one file, <code>plan.json</code>: the whole video in words. To change anything you edit it, in an editor or on <a href="#page">videoharness&rsquo;s own page</a>, which your computer serves to your browser, and make the video again by name. Every still, clip and cut is kept as a take, so going back to an earlier wording costs nothing.</p>
+  </div>
+</section>
+
+<section id="hardware">
+  <div class="wrap">
+    <p class="eyebrow">Minimum hardware</p>
+    <h2>What it takes to run the fox example</h2>
+    <p class="lead">The fox example in <a href="#examples">the runs below</a> was made from start to finish on one graphics card with 16 GB. It was then made again from the brief with the writer on that same card, and Ollama and ComfyUI held between them to the memory a 32 GB computer could give. That is the least it has been run on, so it is the least we can vouch for. On it, count on 45 to 50 seconds of waiting for each second of video.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">Graphics card</div><div class="v">16 GB, NVIDIA</div><p>One RTX 5060 Ti, which the writer and ComfyUI use in turn. The clip model (21 GB) and the writer (20 GB) are each larger than the card: what fits is kept on the card and the rest in memory. The card was full at the peak, at 15.4 GB.</p></div>
+      <div class="tile"><div class="k">Memory</div><div class="v">32 GB</div><p>Tried as 26 GB for Ollama and ComfyUI together, which leaves 6 GB of a 32 GB computer for everything else. It made the whole example, each clip about 45 seconds slower than when ComfyUI was given 64 GB, of which it used 43 GB.</p></div>
+      <div class="tile"><div class="k">Disk</div><div class="v">90 GB free</div><p>63 GB of models for ComfyUI and 20 GB for the writer, then your videos: the fox example&rsquo;s folder came to 38 MB.</p></div>
+      <div class="tile"><div class="k">The rest</div><div class="v">Linux</div><p>Python 3.10 or later, ffmpeg, ComfyUI and Ollama. It was run on Ubuntu 24.04 with ComfyUI 0.42 and Ollama 0.40. The processor matters little to the pictures, but it sets the writer&rsquo;s pace when the writer is larger than the card. This one is a six-core Xeon from 2016.</p></div>
+    </div>
+
+    <h3>What the fox example took on that card</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Stage</th><th class="num">64 GB, writer elsewhere</th><th class="num">26 GB, all on the one card</th></tr></thead>
+      <tbody>
+        <tr><td>The plan, by the writer</td><td class="num">28 s</td><td class="num"><span class="t">4 min 59 s</span></td></tr>
+        <tr><td>The first still, most of it the model loading</td><td class="num">69 s</td><td class="num">67 s</td></tr>
+        <tr><td>Each still after that, 1344 by 768</td><td class="num">14 s</td><td class="num">15 s</td></tr>
+        <tr><td>Each 10-second clip, 896 by 512 at 24 frames a second, with sound</td><td class="num"><span class="t">7 min 44 s,</span> <span class="t">7 min 15 s</span></td><td class="num"><span class="t">8 min 30 s,</span> <span class="t">7 min 56 s</span></td></tr>
+        <tr><td>The cut: joining, and levelling the sound</td><td class="num">4 s</td><td class="num">4 s</td></tr>
+        <tr><td><strong>The whole example, 20 seconds of video</strong></td><td class="num"><strong><span class="t">16 min 55 s</span></strong></td><td class="num"><strong><span class="t">22 min 52 s</span></strong></td></tr>
+      </tbody>
+    </table></div>
+    <p>On the left ComfyUI had the card to itself and 64 GB of memory, and the writer was on a second machine. On the right the writer and ComfyUI had the one card and 26 GB between them. Either way a clip costs 45 to 50 seconds for each second of video, and most of the wait is the clips.</p>
+
+    <div class="note">
+      <p><strong>The writer takes its turn on the card.</strong> <code>gemma4:31b</code> is a 20 GB model, larger than the card, so Ollama put 39 of its 61 layers on the card and ran the rest on the processor. The plan then took 4 min 59 s: 2 min 18 s to load the model from a SATA disk, and the rest to read the brief and write at 4 tokens a second. When the plan is written the harness has Ollama let go of the card, so ComfyUI has all of it for the stills and the clips, and they took no longer for it. On a machine with room for the whole model the plan took 28 s. To use another writer, name any model your Ollama has as <code>"writer"</code> in <code>~/videoharness/config/farm.json</code>, or give it to one run with <code>--model</code>.</p>
+    </div>
+    <p><strong>More hardware.</strong> A second card does not make a clip faster: the same kind of clip took as long (474 s) on two of these cards. A second ComfyUI server does shorten the wait, since each idle server is given a clip of its own.</p>
+    <p><strong>Not tried:</strong> less memory than that, a card with less than 16 GB, a card that is not NVIDIA, macOS and Windows.</p>
+    <details>
+      <summary>How this was measured</summary>
+      <div>
+        <p>ComfyUI was started on one card of a larger computer with a hard ceiling on the memory it could use, and the whole example was run against it three times: with 64 GB, which the runs below are from, with 32 GB and with 26 GB (17 min 29 s and 17 min 54 s for the stills, the clips and the cut). Each time it made the same video, byte for byte. For the right-hand column a second Ollama was started on the same card and under the same 26 GB ceiling as ComfyUI, the writer&rsquo;s file was put out of the disk&rsquo;s cache, and the example was run from the brief. That run wrote a plan of its own, so its video is another of the same shape: two 10-second shots.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <p class="eyebrow">Install</p>
+    <h2>From nothing to ready for a first video</h2>
+    <p class="lead">The installer installs videoharness itself: the program, the <code>vh</code> command, and its own page, which your computer serves to your browser. ComfyUI, Ollama, their models and ffmpeg are yours to install; it looks for them at the end and says what is missing.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Have ComfyUI, Ollama and ffmpeg running</h3>
+          <p>On this computer, or on another at home. One ComfyUI server is enough; more share the work.</p>
+          <ul>
+            <li><a href="https://www.comfy.org/" rel="noopener">ComfyUI</a>, new enough to have the MiniMax H3 nodes built in. It was made and run on ComfyUI 0.42.</li>
+            <li><a href="https://ollama.com/" rel="noopener">Ollama</a>, for the writer model.</li>
+            <li>ffmpeg with libx264: <code>sudo apt install ffmpeg</code> on Debian or Ubuntu.</li>
+            <li>Python 3.10 or later, which the installer builds on.</li>
+          </ul>
+          <div class="note">
+            <p><strong>On another computer at home?</strong> Out of the box, ComfyUI and Ollama each answer only the computer they run on. Start ComfyUI with <code>--listen</code>, as in <code>python main.py --listen</code>. Give Ollama <code>OLLAMA_HOST=0.0.0.0</code>: where it runs as a service, that is <code>sudo systemctl edit ollama</code>, the two lines below, and <code>sudo systemctl restart ollama</code>. Neither asks for a password, so anyone on that network can use them: do this only on a network you trust.</p>
+          </div>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">What to add for the Ollama service</span></div>
+            <pre><span class="o">[Service]
+Environment="OLLAMA_HOST=0.0.0.0"</span></pre>
+          </figure>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <h3>Fetch the models</h3>
+          <p>videoharness downloads no model. You fetch each one, once, into the ComfyUI that will use it: about 63 GB for stills and clips together, and about 20 GB for the writer.</p>
+          <div class="note warn" id="model-licences">
+            <p><strong>Each model comes under its own licence, which is not videoharness&rsquo;s.</strong> Read it on the model&rsquo;s page before you install the model or publish what it makes. When this was written, Z-Image Turbo&rsquo;s page gave Apache 2.0. MiniMax H3&rsquo;s licence said it applies worldwide except the European Union, the United Kingdom, the Republic of Korea and the United States of America, where it asks you to contact MiniMax for a licence, and that what the model makes may not be published without saying clearly that it is machine-generated.</p>
+          </div>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">The writer, on the Ollama server</span><button class="copy" type="button" data-copy="ollama pull gemma4:31b">Copy</button></div>
+            <pre><span class="p">$ </span><span class="c">ollama pull gemma4:31b</span></pre>
+          </figure>
+          <p><code>gemma4:31b</code> is the writer the starter config names, and the one that wrote every example here. Any model your Ollama has can take its place: name it as <code>"writer"</code> in the config in step 5.</p>
+          <details open>
+            <summary>The eight ComfyUI files, where each goes, and the commands that fetch them</summary>
+            <div>
+              <p><strong>Stills: Z-Image Turbo</strong> (20.6 GB). <a href="https://huggingface.co/Comfy-Org/z_image_turbo" rel="noopener">Its page</a>.</p>
+              <div class="scroll"><table>
+                <thead><tr><th>File</th><th class="num">Size</th><th>Goes in <code>ComfyUI/models/</code></th></tr></thead>
+                <tbody>
+                  <tr><td><code>z_image_turbo_bf16.safetensors</code></td><td class="num">12.3 GB</td><td><code>diffusion_models/</code></td></tr>
+                  <tr><td><code>qwen_3_4b.safetensors</code></td><td class="num">8 GB</td><td><code>text_encoders/</code></td></tr>
+                  <tr><td><code>ae.safetensors</code></td><td class="num">0.3 GB</td><td><code>vae/</code></td></tr>
+                </tbody>
+              </table></div>
+              <p><strong>Clips: MiniMax H3, with sound</strong> (42.1 GB). <a href="https://huggingface.co/Comfy-Org/MiniMax-H3" rel="noopener">Its page</a>.</p>
+              <div class="scroll"><table>
+                <thead><tr><th>File</th><th class="num">Size</th><th>Goes in <code>ComfyUI/models/</code></th></tr></thead>
+                <tbody>
+                  <tr><td><code>minimax_h3_fl2va_pruned_int8_convrot.safetensors</code></td><td class="num">21 GB</td><td><code>diffusion_models/</code></td></tr>
+                  <tr><td><code>minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors</code></td><td class="num">2 GB</td><td><code>loras/</code></td></tr>
+                  <tr><td><code>qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors</code></td><td class="num">15.7 GB</td><td><code>text_encoders/</code></td></tr>
+                  <tr><td><code>minimax_h3_video_vae_int8_convrot.safetensors</code></td><td class="num">2.8 GB</td><td><code>vae/</code></td></tr>
+                  <tr><td><code>minimax_h3_audio_vae_fp32.safetensors</code></td><td class="num">0.6 GB</td><td><code>vae/</code></td></tr>
+                </tbody>
+              </table></div>
+              <p>From a terminal, in your ComfyUI&rsquo;s <code>models</code> folder (<code>cd /path/to/ComfyUI/models</code>). <code>-c</code> carries on a download that was cut off.</p>
+              <figure class="term">
+                <div class="term-bar"><span class="dots"></span><span class="what">For stills</span><button class="copy" type="button" data-copy-from="wget-stills">Copy</button></div>
+                <pre id="wget-stills">wget -c -P diffusion_models https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors
+wget -c -P text_encoders https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors
+wget -c -P vae https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors</pre>
+              </figure>
+              <figure class="term">
+                <div class="term-bar"><span class="dots"></span><span class="what">For clips</span><button class="copy" type="button" data-copy-from="wget-clips">Copy</button></div>
+                <pre id="wget-clips">wget -c -P diffusion_models https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+wget -c -P loras https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
+wget -c -P text_encoders https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+wget -c -P vae https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors
+wget -c -P vae https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors</pre>
+              </figure>
+              <p>Then restart ComfyUI. With several servers, each needs the models for the work it is to do.</p>
+            </div>
+          </details>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <h3>Get the installer, and check it</h3>
+          <p>One file. The checksum beside it lets you check that the file you fetched is the one that was made.</p>
+          <div class="get">
+            <a class="btn go" href="videoharness-0.1.0-install.sh" download>videoharness-0.1.0-install.sh</a>
+            <a class="btn" href="videoharness-0.1.0-install.sh.sha256" download>Its checksum</a>
+          </div>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">In the folder you saved both in</span><button class="copy" type="button" data-copy="sha256sum -c videoharness-0.1.0-install.sh.sha256">Copy</button></div>
+            <pre><span class="p">$ </span><span class="c">sha256sum -c videoharness-0.1.0-install.sh.sha256</span>
+<span class="o">videoharness-0.1.0-install.sh: OK</span></pre>
+          </figure>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <h3>Run it, as yourself</h3>
+          <p>Without <code>sudo</code>. It says what it is about to do and asks before doing it.</p>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">Install</span><button class="copy" type="button" data-copy="bash videoharness-0.1.0-install.sh">Copy</button></div>
+            <pre><span class="p">$ </span><span class="c">bash videoharness-0.1.0-install.sh</span></pre>
+          </figure>
+          <p>Then it:</p>
+          <ul>
+            <li>installs the program into <code>~/.local/share/videoharness</code>, in an environment of its own that touches nothing else on your computer;</li>
+            <li>puts the <code>vh</code> command in <code>~/.local/bin</code>;</li>
+            <li>makes <code>~/videoharness</code>, the harness&rsquo;s home folder, where your config and every video live;</li>
+            <li>sets its page up as a service of yours (a systemd user service named <code>videoharness</code>) and starts it at <code>http://127.0.0.1:8710</code>;</li>
+            <li>looks at what this computer has and lists what is missing before a video can be made.</li>
+          </ul>
+          <p>If <code>vh</code> is not found afterwards, <code>~/.local/bin</code> is not on your PATH yet: open a new terminal, or log out and in.</p>
+          <p>It installs for you alone, and everything it writes is under your own <code>~</code>. It fetches one thing from the internet: Pillow, which the harness draws with, from the Python package index. With <code>--offline</code> it fetches nothing.</p>
+          <details>
+            <summary>The installer&rsquo;s options</summary>
+            <div>
+              <div class="scroll"><table>
+                <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+                <tbody>
+                  <tr><td><code>--yes</code></td><td>do not ask before installing</td></tr>
+                  <tr><td><code>--home DIR</code></td><td>keep your config and videos in <code>DIR</code> instead of <code>~/videoharness</code>: another disk, say. Videos are large.</td></tr>
+                  <tr><td><code>--port N</code></td><td>serve the page on port <code>N</code> instead of 8710</td></tr>
+                  <tr><td><code>--home-network</code></td><td>let other devices at home open the page. <strong>It asks for no password</strong>, so anyone on your network can make videos and see the ones here.</td></tr>
+                  <tr><td><code>--no-service</code></td><td>do not make the page a service; you start it yourself with <code>vh web</code></td></tr>
+                  <tr><td><code>--offline</code></td><td>fetch nothing from the internet, and use the Pillow your Python already has</td></tr>
+                  <tr><td><code>--python PATH</code></td><td>the Python to build on, instead of <code>python3</code></td></tr>
+                  <tr><td><code>--license</code></td><td>show the licence and stop</td></tr>
+                </tbody>
+              </table></div>
+              <p>To update, run a newer installer the same way: it keeps your config, your videos and the choices you made. To remove it: <code>bash ~/.local/share/videoharness/uninstall.sh</code>, which leaves <code>~/videoharness</code>, with your config and videos, as it is.</p>
+            </div>
+          </details>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <h3>Name your servers, and check</h3>
+          <p>The starter config expects ComfyUI and Ollama on this computer, and then there is nothing to change. If yours are elsewhere at home, put their addresses in <code>~/videoharness/config/farm.json</code>, each one whole: <code>http://</code>, the computer&rsquo;s address, the port.</p>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">~/videoharness/config/farm.json, with both on one other computer</span></div>
+            <pre><span class="o">{
+  "comfy": ["http://192.168.1.20:8188"],
+  "ollama": ["http://192.168.1.20:11434"],
+  "writer": "gemma4:31b"
+}</span></pre>
+          </figure>
+          <p>Then:</p>
+          <figure class="term">
+            <div class="term-bar"><span class="dots"></span><span class="what">What each server has, and what is missing</span><button class="copy" type="button" data-copy="vh farm">Copy</button></div>
+            <pre><span class="p">$ </span><span class="c">vh farm</span>
+<span class="o">ComfyUI
+  127.0.0.1:8189       0.42.0  RTX 5060 Ti     15 of 15 GB free   idle        stills yes  clips yes
+Ollama
+  127.0.0.1:11434      gemma4:31b   in memory: none
+Writer: gemma4:31b
+</span><span class="hl">Missing</span><span class="o">
+  no ffmpeg found: install it (`sudo apt install ffmpeg` on Debian or Ubuntu), or name one as "ffmpeg" in config/farm.json. Stills and clips are made without it; the cut, which joins them into the video, is not
+ffmpeg: NO
+narration: NO (narration needs Kokoro, and no Python named here has it: name one that does as "kokoro" in config/farm.json)</span></pre>
+          </figure>
+          <p>That is a computer with one card, its ComfyUI ready (on port 8189; yours is likely on 8188), its writer pulled, and one thing still to do: the line under <code>Missing</code> says what. When a model is missing it names the file, the folder it goes in and its address. When it ends with <code>Nothing is missing: a video can be made.</code>, open <a href="http://127.0.0.1:8710">http://127.0.0.1:8710</a> in a browser on the same computer, or make a video from the terminal, as below.</p>
+          <p><code>narration: NO</code> matters only if you want a narrator. The narrator&rsquo;s voice is Kokoro, a text-to-speech model that you install yourself: &ldquo;A narrator&rdquo; in <a href="INSTALL.md">INSTALL.md</a> says how. After a change to <code>farm.json</code>, restart the page so that it reads all of it again: <code>systemctl --user restart videoharness</code>.</p>
+        </div>
+      </li>
+    </ol>
+
+    <p style="margin-top:1.6rem">The whole of it, with what to check when the page will not open, is in the install guide, <a href="INSTALL.md">INSTALL.md</a>.</p>
+  </div>
+</section>
+
+<section id="examples">
+  <div class="wrap">
+    <p class="eyebrow">Example runs</p>
+    <h2>One fox, one pie, three commands</h2>
+    <p class="lead">These were run on that one 16 GB card, in the run that was given 64 GB of memory, and nothing here is mocked up: each terminal shows what the command printed, and the pictures and the video are what it made. One thing is taken out, the address of the Ollama server. ComfyUI was on port 8189 for the run; yours is likely on 8188.</p>
+
+    <article class="run">
+      <header>
+        <span class="tag">Run 1</span>
+        <h3>A look first: the plan and the stills</h3>
+        <span class="took">1 min 51 s</span>
+      </header>
+      <p>Stills cost seconds and clips cost minutes, so stop after the stills and look. <code>--name</code> picks the video&rsquo;s folder; without it the video is named from its title. Every path <code>vh</code> prints is inside <code>~/videoharness</code>. The run ends by naming one sheet with every first frame on it: open that in any picture viewer, or look on the Videos tab of <a href="#page">videoharness&rsquo;s page</a>.</p>
+      <figure class="term">
+        <div class="term-bar"><span class="dots"></span><span class="what">From a brief to first frames</span><button class="copy" type="button" data-copy='vh make "A fox steals a cooling pie from a farmhouse windowsill and gets away with it. 2D watercolor animation." --seconds 20 --name fox-pie --until stills'>Copy</button></div>
+        <pre><span class="p">$ </span><span class="c">vh make "A fox steals a cooling pie from a farmhouse windowsill and gets away with it. 2D watercolor animation." --seconds 20 --name fox-pie --until stills</span>
+<span class="o"></span><span class="st">== plan</span><span class="o">
+gemma4:31b on &lt;your Ollama server&gt; ...
+The Pie Heist  (2 shots, 20 s)
+  look: 2D watercolor animation with soft edges, warm sunlight, and a palette of earthy oranges and rustic creams.
+  cast: Fox: A slender red fox with a white-tipped tail, black paws, and bright amber eyes.
+  cast: Pie: A golden-brown lattice-top fruit pie in a white ceramic dish.
+   1  10 s  medium shot, eye level
+        still:  A rustic stone farmhouse wall under a bright midday sun. A white wooden windowsill holds the Pie, with thin wisps of steam rising from the crust. The Fox is crouched on the grass below, looking up at the windowsill with a wide, hungry grin and dilated pupils.
+        motion: The Fox leaps upward and lands softly on the wooden ledge. He gently grips the edge of the ceramic dish with his teeth. The camera pans up to follow the Fox's jump.
+        sound:  Birds chirping, soft wind, and a light 'clink' of ceramic on wood.
+   2  10 s  wide shot, low angle
+        still:  The Fox stands on the edge of the windowsill, holding the Pie in his mouth. He is positioned against a background of a green rolling meadow and a clear blue sky. His tail is curled upward in excitement.
+        motion: The Fox jumps down from the ledge into the tall grass. He trots quickly away from the house toward the horizon. The camera tracks the Fox's movement as he disappears into the greenery.
+        sound:  Soft thud of paws hitting grass and the sound of rustling foliage.
+
+videos/fox-pie/plan.json  (28 s, one pass)
+
+</span><span class="st">== stills</span><span class="o">
+2 to draw, 0 already there  (1344x768)
+  [1/2] shot 1  127.0.0.1:8189  69 s
+  [2/2] shot 2  127.0.0.1:8189  14 s
+   1  seed 101    videos/fox-pie/stills/shot-01.png
+   2  seed 102    videos/fox-pie/stills/shot-02.png
+all on one page: videos/fox-pie/stills/sheet.jpg
+
+</span><span class="hl">fox-pie: made as far as the stills in 1 min 51 s</span><span class="o"></span></pre>
+      </figure>
+      <figure class="shot">
+        <img src="fox-sheet.jpg" alt="The contact sheet: two watercolour frames, numbered 1 and 2, each marked 10 s. In the first a fox looks up at a steaming pie on a stone farmhouse windowsill; in the second the fox stands on the sill with the pie in his mouth, a meadow behind him." width="1304" height="381" loading="lazy">
+        <figcaption><code>~/videoharness/videos/fox-pie/stills/sheet.jpg</code>: every shot&rsquo;s first frame on one sheet, with its number and length.</figcaption>
+      </figure>
+    </article>
+
+    <article class="run">
+      <header>
+        <span class="tag">Run 2</span>
+        <h3>Carry on, by name, to the finished video</h3>
+        <span class="took">15 min 4 s</span>
+      </header>
+      <p>Given the name of a video that is already planned, <code>make</code> leaves the plan alone and runs the later stages. The stills are already there, so it goes straight to the clips.</p>
+      <figure class="term">
+        <div class="term-bar"><span class="dots"></span><span class="what">Animate and cut</span><button class="copy" type="button" data-copy="vh make fox-pie">Copy</button></div>
+        <pre><span class="p">$ </span><span class="c">vh make fox-pie</span>
+<span class="o"></span><span class="st">== stills</span><span class="o">
+0 to draw, 2 already there  (1344x768)
+   1  seed 101    videos/fox-pie/stills/shot-01.png
+   2  seed 102    videos/fox-pie/stills/shot-02.png
+all on one page: videos/fox-pie/stills/sheet.jpg
+
+</span><span class="st">== clips</span><span class="o">
+2 to make (20 s of video), 0 already there  (896x512, 24 fps)
+  [1/2] shot 1  127.0.0.1:8189  464 s
+  [2/2] shot 2  127.0.0.1:8189  435 s
+   1  seed 101    10.1 s  videos/fox-pie/clips/shot-01.mp4
+   2  seed 102    10.1 s  videos/fox-pie/clips/shot-02.mp4
+
+</span><span class="st">== cut</span><span class="o">
+  shot 1: -38.4 LUFS, turned up 15.4 dB
+  shot 2: -31.4 LUFS, turned up 8.4 dB
+cut 2 shots into 20 s of video  (4 s)
+videos/fox-pie/fox-pie.mp4  (2 shots, 20 s)
+
+</span><span class="hl">fox-pie: made in 15 min 4 s</span><span class="o"></span></pre>
+      </figure>
+      <figure class="shot">
+        <video controls preload="none" playsinline poster="fox-still.jpg" data-still="fox-still.jpg" data-alt="The first frame of the finished video: a watercolour fox and a pie on a windowsill">
+          <source src="fox-pie.mp4" type="video/mp4">
+        </video>
+        <figcaption><code>~/videoharness/videos/fox-pie/fox-pie.mp4</code>, exactly as the run above left it: 20 seconds, 896 by 512, with the sound the clips were made with. Machine-generated.</figcaption>
+      </figure>
+    </article>
+
+    <article class="run">
+      <header>
+        <span class="tag">Run 3</span>
+        <h3>Change one thing, and only that is remade</h3>
+        <span class="took">1 min 5 s</span>
+      </header>
+      <p>The second frame would look better at sunset. So one sentence of shot 2 is changed in <code>~/videoharness/videos/fox-pie/plan.json</code>, here in an editor. The page has a field for it too.</p>
+      <figure class="term">
+        <div class="term-bar"><span class="dots"></span><span class="what">plan.json: shot 2, its first frame</span></div>
+        <pre><span class="o">"still": "The Fox stands on the edge of the windowsill, holding the Pie in his mouth. He is positioned against a background of a green rolling meadow and </span><del>a clear blue sky</del> <ins>a sky at sunset, pink and gold</ins><span class="o">. His tail is curled upward in excitement."</span></pre>
+      </figure>
+      <p>Then the video is made again by name, as far as the stills. Shot 1 is left as it is, and only shot 2 is drawn again. Most of its 65 seconds is the stills model loading again: on one card it and the clip model take turns.</p>
+      <figure class="term">
+        <div class="term-bar"><span class="dots"></span><span class="what">Bring the stills up to date</span><button class="copy" type="button" data-copy="vh make fox-pie --until stills">Copy</button></div>
+        <pre><span class="p">$ </span><span class="c">vh make fox-pie --until stills</span>
+<span class="o"></span><span class="st">== stills</span><span class="o">
+1 to draw, 1 already there  (1344x768)
+  [1/1] shot 2  127.0.0.1:8189  65 s
+   1  seed 101    videos/fox-pie/stills/shot-01.png
+   2  seed 102    videos/fox-pie/stills/shot-02.png
+all on one page: videos/fox-pie/stills/sheet.jpg
+
+</span><span class="hl">fox-pie: made as far as the stills in 1 min 5 s</span><span class="o"></span></pre>
+      </figure>
+      <figure class="shot">
+        <img src="fox-sheet-2.jpg" alt="The contact sheet after the change: frame 1 is the same as before, and in frame 2 the sky behind the fox is now a pink and gold sunset." width="1304" height="381" loading="lazy">
+        <figcaption>The sheet after the change. <code>vh make fox-pie</code> would now remake shot 2&rsquo;s clip and the cut, and leave shot 1&rsquo;s clip as it is.</figcaption>
+      </figure>
+    </article>
+
+    <article class="run">
+      <header>
+        <span class="tag">More</span>
+        <h3>The same command, steered</h3>
+      </header>
+      <p>Most of these are a brief with one more thing said. The ones that name <code>fox-pie</code> work on a video already made. Each has its section in the manual, <a href="MANUAL.md">MANUAL.md</a>.</p>
+      <div class="recipes">
+        <div class="recipe"><p>An upright video</p><code>vh make "..." --aspect 9:16</code></div>
+        <div class="recipe"><p>Your own pictures<span class="more">One shot from each, in that order, 10 seconds each unless <code>--seconds</code> says.</span></p><code>vh make "..." --picture a.jpg b.jpg</code></div>
+        <div class="recipe"><p>One continuous scene<span class="more">Each shot starts on the frame the last ended on. Add one <code>--picture</code>, and whoever is in it stays the same all the way through.</span></p><code>vh make "..." --carry-on</code></div>
+        <div class="recipe"><p>A narrator<span class="more">The voice is Kokoro, which you install yourself: &ldquo;A narrator&rdquo; in <a href="INSTALL.md">INSTALL.md</a>.</span></p><code>vh make "..." --narrate</code></div>
+        <div class="recipe"><p>A narrator in a voice you choose<span class="more"><code>vh voices</code> lists the ones you have.</span></p><code>vh make "..." --narrate --voice bm_george</code></div>
+        <div class="recipe"><p>A narrator who says your own text<span class="more">Word for word: each paragraph becomes a shot.</span></p><code>vh make "..." --text story.txt</code></div>
+        <div class="recipe"><p>Subtitles<span class="more">The narrator&rsquo;s words at the foot of the picture, as they are said.</span></p><code>vh make "..." --narrate --subtitles</code></div>
+        <div class="recipe"><p>A title on a video already made<span class="more">It needs no narrator and no server: it is a new cut, and took 5 seconds here.</span></p><code>vh make fox-pie --title-card</code></div>
+        <div class="recipe"><p>Cards<span class="more">A number or a few words shown large over each shot that needs one.</span></p><code>vh make "..." --cards</code></div>
+        <div class="recipe"><p>Another take of a first frame<span class="more">Shot 2 is drawn again from the same words.</span></p><code>vh stills fox-pie --reroll 2</code></div>
+        <div class="recipe"><p>Another take of a clip<span class="more">Shot 2 is animated again, and its first frame is kept.</span></p><code>vh clips fox-pie --reroll 2</code></div>
+        <div class="recipe"><p>The plan, and the exact prompt each model gets</p><code>vh show fox-pie</code></div>
+        <div class="recipe"><p>Every model it uses, and where to get each</p><code>vh models</code></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="page">
+  <div class="wrap">
+    <p class="eyebrow">Its own page</p>
+    <h2>Or do all of it in your browser</h2>
+    <p class="lead">The installer starts a page at <code>http://127.0.0.1:8710</code>, served by your own computer. It runs the same commands, so a video started in the terminal can be carried on there, and the other way round.</p>
+    <figure class="shot">
+      <img src="page-shot.png" alt="The fox video open on the page. Shot 1 has its clip on the left, with the buttons Draw it again and New take of the clip, and its fields on the right: seconds, framing, first frame, what happens, sound, a Silent tick, what the narrator says, and cards. Shot 2 begins below it." width="1080" height="1024" loading="lazy">
+      <figcaption>The fox video from the runs above, opened on the page: each shot&rsquo;s clip beside the words that made it.</figcaption>
+    </figure>
+    <div class="tiles">
+      <div class="tile"><div class="k">Tab</div><div class="v">New video</div><p><code>vh make "a brief"</code> as a form: the brief, the length and shape, pictures of yours, a narrator and their voice, subtitles and cards, and how far to go.</p></div>
+      <div class="tile"><div class="k">Tab</div><div class="v">Videos</div><p>Every video with its first still. Open one to play it and change its plan shot by shot. &ldquo;Draw it again&rdquo; and &ldquo;New take of the clip&rdquo; try a shot again from the same words. &ldquo;Save and make&rdquo; remakes only what a change touches.</p></div>
+      <div class="tile"><div class="k">Tab</div><div class="v">Jobs</div><p>What is running and what is waiting, with each job&rsquo;s output as it comes. &ldquo;Stop it&rdquo; takes the work back off the servers and keeps what was made.</p></div>
+      <div class="tile"><div class="k">Tab</div><div class="v">Farm</div><p>What each server has, whether it is busy, and what is missing: the same as <code>vh farm</code>.</p></div>
+    </div>
+    <p>Started plain, the page answers this computer only. Install with <code>--home-network</code>, or start the page yourself with <code>vh web --home-network</code>, and it also answers a tablet, a phone or another computer at home, at this computer&rsquo;s address and port 8710. It asks for no password, so do not use that on a network you share with people who should not see your videos.</p>
+  </div>
+</section>
+
+<section id="private">
+  <div class="wrap">
+    <p class="eyebrow">What stays on your machines</p>
+    <h2>Everything</h2>
+    <div class="tiles three">
+      <div class="tile"><div class="k">Servers</div><div class="v">Home addresses only</div><p>Only this computer and addresses on a private network (192.168.x.x, 10.x.x.x and the like) are accepted as servers. Anything else is refused.</p></div>
+      <div class="tile"><div class="k">Your material</div><div class="v">Never sent out</div><p>Briefs, prompts, plans and pictures go to your own Ollama and ComfyUI and nowhere else. No cloud model is used.</p></div>
+      <div class="tile"><div class="k">The page</div><div class="v">One file</div><p>The page in your browser is one file and loads nothing from the internet. Neither does this one.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="licence">
+  <div class="wrap">
+    <p class="eyebrow">Guides and licence</p>
+    <h2>Read before you install</h2>
+    <div class="tiles two">
+      <div class="tile"><div class="k">Guide</div><div class="v"><a href="INSTALL.md">INSTALL.md</a></div><p>Installing it, the models, setting it up, the page as a service, and what to check when the page will not open.</p></div>
+      <div class="tile"><div class="k">Guide</div><div class="v"><a href="MANUAL.md">MANUAL.md</a></div><p>The plan, your own pictures, narration and voices, words on the picture, sound, several servers, and every command.</p></div>
+    </div>
+    <p>Both guides also come inside the installer, which puts them in <code>~/.local/share/videoharness/</code>.</p>
+    <p>videoharness is a Madahood Studio development project under Ipsa Solutions LLC. It is Copyright (c) 2026 Ipsa Solutions LLC and is made available under the <a href="https://www.elastic.co/licensing/elastic-license" rel="noopener">Elastic License 2.0</a>. In short, and the licence itself is what counts: you may use it, copy it and change it; you may not offer it to others as a hosted or managed service, and you may not remove or alter its licence and copyright notices. The full terms are in <a href="LICENSE">LICENSE</a>, and <code>bash videoharness-0.1.0-install.sh --license</code> shows them before anything is installed.</p>
+    <p><strong>The models are their makers&rsquo;, each under a licence of its own.</strong> MiniMax H3 makes every clip, and its licence is the one to read first. When this was written it said it applies worldwide except the European Union, the United Kingdom, the Republic of Korea and the United States of America, where it asks you to contact MiniMax for a licence, and that what the model makes may not be published without saying clearly that it is machine-generated. The video on this page was made with it and is marked that way. Where to read each licence is in <a href="#model-licences">step 2</a>.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>videoharness is a Madahood Studio development project under Ipsa Solutions LLC. Copyright (c) 2026 Ipsa Solutions LLC. Made available under the Elastic License 2.0.</p>
+    <p>ComfyUI, Ollama, Z-Image Turbo, MiniMax H3 and ffmpeg are their makers&rsquo; own, each under its own licence; videoharness installs none of them. The pictures and the video on this page are machine-generated.</p>
+  </div>
+</footer>
+
+<script>
+// Copy buttons, and a still where the video is not beside the page. Nothing here talks to anything.
+document.querySelectorAll("button.copy").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var from = b.dataset.copyFrom && document.getElementById(b.dataset.copyFrom);
+    var text = from ? from.textContent : b.dataset.copy;
+    var done = function () { b.textContent = "Copied"; b.classList.add("done"); setTimeout(function () { b.textContent = "Copy"; b.classList.remove("done"); }, 1600); };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, function () {}); return; }
+    var t = document.createElement("textarea"); t.value = text; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    t.remove();
+  });
+});
+document.querySelectorAll("video[data-still]").forEach(function (v) {
+  var swap = function () {
+    var i = document.createElement("img"); i.src = v.dataset.still; i.alt = v.dataset.alt || ""; v.replaceWith(i);
+  };
+  var s = v.querySelector("source");
+  if (s) s.addEventListener("error", swap);
+  v.addEventListener("error", swap);
+});
+</script>
+</body>
+</html>
